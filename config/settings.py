@@ -39,6 +39,10 @@ INSTALLED_APPS = [
     'accounts',
     'posts',
     'interactions',
+    #Local apps
+    # 'accounts.apps.AccountsConfig',
+    # 'posts.apps.PostsConfig',
+    # 'interactions.apps.InteractionsConfig',
 ]
 
 MIDDLEWARE = [

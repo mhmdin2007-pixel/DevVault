@@ -23,9 +23,7 @@ from accounts.views import home
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("", include("posts.urls")),
-    path('accounts/', include("accountls.urls")),
-    path('interactions/', include('interactions.urls')),
+    path('', home),
 ]
 
 if settings.DEBUG:
