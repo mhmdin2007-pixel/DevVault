@@ -1,0 +1,19 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            DevVault
+        </a>
+
+        <div class="ms-auto">
+            {% if user.is_authenticated %}
+                <span class="text-light me-3">
+                    {{ user.username }}
+                </span>
+            {% else %}
+                <a href="#" class="btn btn-outline-light">
+                    Login
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
