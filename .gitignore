@@ -3,8 +3,7 @@ __pycache__/
 *.pyc
 db.sqlite3
 .env
-media/
 .idea/
 .vscode/
 .DS_Store
-
+media/
