@@ -40,3 +40,4 @@ class Profile(models.Model):
     def full_name(self):
         '''Return user's full name or username if not set.'''
         return self.user.get_full_name() or self.user.username
+
