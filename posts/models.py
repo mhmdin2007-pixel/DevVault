@@ -341,8 +341,10 @@ class Follow(models.Model):
     class Meta:
         verbose_name = 'Follow'
         verbose_name_plural = 'Follows'
+
         # هر کاربر نمیتونه دوبار یه نفر رو فالو کنه
         unique_together = ['follower', 'following']
+        
         # این قسمت رو باید توی views چک کنیم  که کاربر نمیتونه خودش رو هم فالو کنه
         constraints = [
             models.CheckConstraint(
