@@ -49,6 +49,16 @@ class Comment(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
+
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='replies',
+        verbose_name='Parent Comment'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True) 
 
@@ -58,11 +68,22 @@ class Comment(models.Model):
         verbose_name_plural = 'Comments'
         indexes = [
             models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=['parent']),
         ]
 
     def __str__(self):
         return f"{self.user.username} commented on {self.content_type} (ID: {self.object_id})"
     
+    @property
+    def is_reply(self):
+        '''Check if this comment is a reply to another commment.'''
+        return self.parent is not None
+    
+    @property
+    def replies_count(self):
+        '''Count of direct replies to this commnet.'''
+        return self.replies.count()
+
 class Vote(models.Model):
     '''
     Vote on any content.

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Answer, Vote, Bookmark, Follow
+from .models import Answer, Vote, Bookmark, Follow, Comment
 
 @admin.register(Answer)
 class AnswerAdmin(admin.ModelAdmin):
@@ -28,3 +28,9 @@ class FollowAdmin(admin.ModelAdmin):
     search_fields = ['follower__username', 'following__username']
     readonly_fields = ['created_at']
 
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ['user', 'content', 'content_type', 'parent','created_at']
+    list_filter = ['created_at']
+    search_fields = ['user__username', 'content']
+readonly_fields = ['created_at', 'updated_at']
