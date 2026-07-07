@@ -8,7 +8,6 @@ class AnswerAdmin(admin.ModelAdmin):
     search_fields = ['content', 'author__username', 'post__title']
     readonly_fields = ['created_at', 'updated_at']
 
-
 @admin.register(Vote)
 class VoteAdmin(admin.ModelAdmin):
     list_display = ['user', 'content_type', 'object_id', 'vote_type', 'created_at']
