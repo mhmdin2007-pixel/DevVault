@@ -1,0 +1,50 @@
+{% extends 'base.html' %} 
+{% load static %}
+
+{% block title %} Login | DevVault {% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md">
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-header bg-transparent border-0 pt-4 text-center">
+                <h3 class="fw-bold">Welcome Back</h3>
+                <p class="text-muted small">Sign in to continue your journey</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        {{ form.username.label_tag }}
+                        {{ form.username }}
+                        {% if form.username.error %}
+                            <div class="invalid-feedback d-block">
+                                {{ from.username.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.password.label_tag }}
+                        {{ form.password }}
+                        {% if from.password.errrors %}
+                            <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-all me-2"></i>Sign In
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-center pb-4">
+                <p class="mb-0">
+                    Don't have an account?
+                    <a href="{% url 'accounts:register' %}" class="text-decoration-none fw-bold">Register Now</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

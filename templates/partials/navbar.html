@@ -1,19 +1,38 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm" style="position: sticky; top: 0; z-index: 100;">
     <div class="container">
-        <a class="navbar-brand" href="/">
-            DevVault
+        <a class="navbar-brand fw-bold fs-4" href="{% url 'posts:home'}">
+            <i class="fas fa-code me-2"></i>DevVault
         </a>
-
-        <div class="ms-auto">
-            {% if user.is_authenticated %}
-                <span class="text-light me-3">
-                    {{ user.username }}
-                </span>
-            {% else %}
-                <a href="#" class="btn btn-outline-light">
-                    Login
-                </a>
-            {% endif %}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <span class="nav-link text-light">
+                            <i class="fas fa-user-circle me-1"></i>
+                            {{ user.username }}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'accounts:logout' %}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-sign-out-all me-1"></i>Logout
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a href="{% url 'accounts:login' %}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-sign-in-all me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <a href="{% url 'accounts:register' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-user-plus me-1"></i>Register
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
         </div>
     </div>
 </nav>
