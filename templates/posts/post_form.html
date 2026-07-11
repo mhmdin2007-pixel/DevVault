@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit Post{% else %}Create Post{% endif %} | DevVault{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent">
+                <h4 class="mb-0">
+                    {% if object %}
+                        <i class="fas fa-edit me-2"></i> Edit Post
+                    {% else %}
+                        <i class="fas fa-plus-circle me-2"></i>Create New Post
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post", enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            {{ field.label_tag }}
+                            {{ field }}
+                            {% if field.help_text %}
+                                <small class="from-text text-muted">{{ field.help_text }}</small>
+                            {% endif %}
+                            {if field.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ field.errors|join:", " }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Post
+                        </button>
+                        <a href="{% url 'posts:home' %}" class="btn btn-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

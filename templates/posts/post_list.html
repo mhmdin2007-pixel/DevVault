@@ -1,0 +1,38 @@
+{% for post in posts %}
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <h5 class="card-title">
+                    <a href="{% url 'posts:post_detail' post.slug %}" class="text-decoration-none">
+                        {{ post.title }}
+                    </a>
+                </h5>
+                <span class="badge bg-secondary">{{ post.get_post_type_display }}</span>
+            </div>
+            
+            <p class="card-text text-muted">{{ post.content|truncatewords:30 }}</p>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted">
+                        <i class="fas fa-user me-1"></i> {{ post.author.username }}
+                        <i class="fas fa-calendar-alt ms-2 me-1"></i> {{ post.created_at|date }}
+                    </small>
+                </div>
+                <div>
+                    <span class="badge bg-light text-dark me-1">
+                        <i class="fas fa-thumbs-up"></i> {{ post.votes_count }}
+                    </span>
+                    <span class="badge bg-light text-dark">
+                        <i class="fas fa-comment"></i> {{ post.answers_count }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+{% empty %}
+    <div class="text-center py-5">
+        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+        <p class="text-muted">هیچ پستی وجود ندارد.</p>
+    </div>
+{% endfor %}

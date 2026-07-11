@@ -1,0 +1,114 @@
+<!-- templates/posts/home.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home | DevVault{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- فیلترها (ستون کناری) -->
+    <div class="col-lg-3">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-filter me-2"></i>فیلترها</h6>
+            </div>
+            <div class="card-body">
+                <form method="get">
+                    <!-- فیلتر بر اساس نوع پست -->
+                    <div class="mb-3">
+                        <label class="form-label">نوع پست</label>
+                        <select name="post_type" class="form-select">
+                            <option value="">همه</option>
+                            {% for value, label in post_types %}
+                                <option value="{{ value }}" {% if current_filters.post_type == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- فیلتر بر اساس دسته‌بندی -->
+                    <div class="mb-3">
+                        <label class="form-label">دسته‌بندی</label>
+                        <select name="category" class="form-select">
+                            <option value="">همه</option>
+                            {% for value, label in categories %}
+                                <option value="{{ value }}" {% if current_filters.category == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- فیلتر بر اساس سطح سختی -->
+                    <div class="mb-3">
+                        <label class="form-label">سطح سختی</label>
+                        <select name="difficulty" class="form-select">
+                            <option value="">همه</option>
+                            {% for value, label in difficulties %}
+                                <option value="{{ value }}" {% if current_filters.difficulty == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>اعمال فیلتر
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- لیست پست‌ها (ستون اصلی) -->
+    <div class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4>📋 همه پست‌ها</h4>
+            {% if user.is_authenticated %}
+                <a href="{% url 'posts:post_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>پست جدید
+                </a>
+            {% endif %}
+        </div>
+        
+        <!-- جستجو -->
+        <form method="get" class="mb-4">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control" placeholder="جستجو در پست‌ها..." value="{{ current_filters.q }}">
+                <button class="btn btn-outline-secondary" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+        
+        <!-- لیست پست‌ها -->
+        {% include 'posts/post_list.html' %}
+        
+        <!-- صفحه‌بندی -->
+        {% if is_paginated %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">قبلی</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">بعدی</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
