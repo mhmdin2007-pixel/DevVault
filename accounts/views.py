@@ -1,12 +1,50 @@
 from django.shortcuts import render, redirect
-from django.views.generic import CreateView, FormView
+from django.views.generic import CreateView, DetailView, UpdateView
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse_lazy
 from django.contrib.auth import login
 from django.urls import reverse_lazy
 from django.contrib import messages
-from django.contrib.auth.views import LoginView, LogoutView #ویو های آماده جنگو برای ورود و خروج
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import LoginView, LogoutView#ویو های آماده جنگو برای ورود و خروج
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.models import User
+from .forms import ProfileForm
+
+class ProfileView(DetailView):
+    '''Display user profile with thier posts and stats.'''
+    model = User
+    template_name = 'accounts/profile.html'
+    context_object_name = 'profile_user'
+
+    def get_object(self):
+        '''Get user by username from URL.'''
+        username = self.kwargs.get('username')
+        return get_object_or_404(User, username=username)
+
+class ProfileEditView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """Editing user profile."""
+    model = User
+    template_name = 'accounts/profile_edit.html'
+    form_class = ProfileForm
+
+    def get_object(self):
+        """Get the profile of the current user."""
+        return self.request.user.profile
+    
+    def test_func(self):
+        profile = self.get_object()
+        return self.request.user == profile.user
+    
+    def get_success_url(self):
+        messages.success(self.request, "پروفایل شما با موفقیت ویرایش شد.")
+        return reverse_lazy('accounts:profile', kwargs={
+            'username': self.request.user.username
+        })
+    
+    def form_valid(self, form):
+        messages.success(self.request, "پروفایل شما با موفقیت ویرایش شد.")
+        return super().form_valid(form)
 
 class RegisterView(CreateView, LoginRequiredMixin):
     '''User registeration with automatic login after signup.'''
@@ -15,7 +53,7 @@ class RegisterView(CreateView, LoginRequiredMixin):
     success_url = reverse_lazy('posts:home')
 
     def form_valid(self, form):
-        '''Log the user after successful registration.'''
+        '''Login the user after successful registration.'''
         response = super().form_valid(form)
         login(self.request, self.object)
         messages.success(self.request, f"{self.object.username}! Your account has been created.")
@@ -50,3 +88,4 @@ class CustomLogoutView(LogoutView):
         '''Add info message before logout.'''
         messages.info(request, "you have been succussfully loggedout.")
         return super().dispatch(request, *args, **kwargs)
+    

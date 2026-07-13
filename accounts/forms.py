@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
+from .models import Profile
 
 class CustomUserCreationForm(UserCreationForm):
     '''Enhanced user registeration form with additional validation.'''
@@ -14,7 +15,7 @@ class CustomUserCreationForm(UserCreationForm):
     )
     password1 = forms.CharField(
         label='Password',
-        widget=forms.PasswordInput(attr={'class': 'form-control', 'placeholder': 'Min 8 charecters'}),
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Min 8 charecters'}),
         validators=[MinLengthValidator(8)]
     )
     password2 = forms.CharField(
@@ -57,3 +58,34 @@ class CustomAuthenticationForm(AuthenticationForm):
             'placeholder': 'Enter your password'
         })
     )
+
+class ProfileForm(forms.ModelForm):
+    """Form for editing user profile."""
+
+    class Meta:
+        model = Profile
+        fields = ['bio', 'avatar', 'github_url', 'linkedin_url']
+        widgets = {
+            'bio': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'درباره خودت بنویس...'
+            }),
+            'avatar': forms.FileInput(attrs={
+                'class': 'form-control'
+            }),
+            'github_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://github.com/yourusername'
+            }),
+            'linkedin_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://linkedin.com/in/yourusername'
+            }),
+        }
+        labels = {
+            'bio': 'بیوگرافی',
+            'avatar': 'عکس پروفایل',
+            'github_url': 'لینک گیت‌هاب',
+            'linkedin_url': 'لینک لینکدین',
+        }

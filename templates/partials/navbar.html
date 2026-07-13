@@ -6,14 +6,14 @@
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
+
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-center">
                 {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <span class="nav-link text-light">
-                            <i class="fas fa-user-circle me-1"></i>
-                            {{ user.username }}
-                        </span>
+                        <a href="{% url 'accounts:profile' user.username %}" class="nav-link text-light">
+                            <i class="fas fa-user-circle me-1"></i>{{ user.username }}
+                        </a>
                     </li>
                     <li class="nav-item">
                         <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
