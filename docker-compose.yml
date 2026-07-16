@@ -1,0 +1,50 @@
+# docker-compose.yml
+# version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: devvault_db
+    environment:
+      POSTGRES_DB: devvault
+      POSTGRES_USER: devvault_user
+      POSTGRES_PASSWORD: M1386moin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devvault_user -d devvault"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Django Web Application
+  web:
+    build: .
+    container_name: devvault_web
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_NAME: devvault
+      DB_USER: devvault_user
+      DB_PASSWORD: M1386moin
+      DB_HOST: db
+      DB_PORT: 5432
+    restart: unless-stopped
+
+# Volumes
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
