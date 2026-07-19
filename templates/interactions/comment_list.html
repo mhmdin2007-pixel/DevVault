@@ -1,0 +1,69 @@
+{% load static %}
+
+<div class="comments-section mt-4">
+    <h5>Comments ({{ comments|length }})</h5>
+    
+    {% for comment in comments %}
+        <div class="comment card mb-2 p-3">
+            <div class="d-flex justify-content-between">
+                <strong>{{ comment.user.username }}</strong>
+                <small class="text-muted">{{ comment.created_at|date }}</small>
+            </div>
+            <p class="mb-1">{{ comment.content }}</p>
+            
+            {% if user.is_authenticated %}
+                <button class="btn btn-sm btn-link reply-btn" data-comment-id="{{ comment.id }}">
+                    <i class="fas fa-reply"></i> Reply
+                </button>
+            {% endif %}
+            
+            {% if comment.replies.exists %}
+                <div class="replies ms-4 mt-2">
+                    {% for reply in comment.replies.all %}
+                        <div class="reply card p-2 mb-1">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ reply.user.username }}</strong>
+                                <small class="text-muted">{{ reply.created_at|date }}</small>
+                            </div>
+                            <p class="mb-0">{{ reply.content }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    {% empty %}
+        <p class="text-muted">No comments yet. Be the first to comment!</p>
+    {% endfor %}
+</div>
+
+<div id="reply-form-container" style="display: none;">
+    <form method="post" action="{% url 'interactions:add_comment' content_type.id post.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="parent_id" id="reply-parent-id">
+        <div class="mb-2">
+            <textarea name="content" class="form-control" rows="2" placeholder="Write your reply..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary">Reply</button>
+        <button type="button" class="btn btn-sm btn-secondary cancel-reply">Cancel</button>
+    </form>
+</div>
+
+<script>
+    document.querySelectorAll('.reply-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const commentId = this.dataset.commentId;
+            const formContainer = document.getElementById('reply-form-container');
+            const parentInput = document.getElementById('reply-parent-id');
+            
+            parentInput.value = commentId;
+            formContainer.style.display = 'block';
+            formContainer.scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+    
+    // Cancel reply
+    document.querySelector('.cancel-reply').addEventListener('click', function() {
+        document.getElementById('reply-form-container').style.display = 'none';
+        document.getElementById('reply-parent-id').value = '';
+    });
+</script>

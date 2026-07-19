@@ -10,6 +10,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from .forms import ProfileForm
+from .models import Profile
 
 class ProfileView(DetailView):
     '''Display user profile with thier posts and stats.'''
@@ -21,16 +22,27 @@ class ProfileView(DetailView):
         '''Get user by username from URL.'''
         username = self.kwargs.get('username')
         return get_object_or_404(User, username=username)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.get_object()
 
+        context['user_posts'] = user.posts.all()[:10]
+
+        return context
+    
 class ProfileEditView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """Editing user profile."""
-    model = User
-    template_name = 'accounts/profile_edit.html'
+    model = Profile
     form_class = ProfileForm
+    template_name = 'accounts/profile_edit.html'
 
     def get_object(self):
         """Get the profile of the current user."""
-        return self.request.user.profile
+        profile, created = Profile.objects.get_or_create(
+            user=self.request.user
+        )
+        return profile
     
     def test_func(self):
         profile = self.get_object()
