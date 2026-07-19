@@ -26,7 +26,7 @@
                             {% if field.help_text %}
                                 <small class="from-text text-muted">{{ field.help_text }}</small>
                             {% endif %}
-                            {if field.errors %}
+                            {% if field.errors %}
                                 <div class="invalid-feedback d-block">
                                     {{ field.errors|join:", " }}
                                 </div>
