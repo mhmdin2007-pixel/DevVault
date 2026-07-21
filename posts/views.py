@@ -6,7 +6,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .forms import PostForm
 from django.contrib import messages
 from django.urls import reverse_lazy
-from django.shortcuts import get_list_or_404
+from django.shortcuts import get_object_or_404
+from django.contrib.contenttypes.models import ContentType
 
 class PostListView(ListView):
     '''
@@ -26,8 +27,8 @@ class PostListView(ListView):
         search_query = self.request.GET.get('q')
         if search_query:
             queryset = queryset.filter(
-                Q(title__iconatains=search_query) |
-                Q(content_icontains=search_query)
+                Q(title__icontains=search_query) |
+                Q(content__icontains=search_query)
             )
         
         post_type = self.request.GET.get('post_type')
@@ -65,7 +66,7 @@ class PostListView(ListView):
         context['current_filters'] = {
             'post_type': self.request.GET.get('post_type', ''),
             'category': self.request.GET.get('category', ''),
-            'difficulty': self.request.GET.get('difficylty', ''),
+            'difficulty': self.request.GET.get('difficulty', ''),
             'company': self.request.GET.get('company', ''),
             'tag': self.request.GET.get('tag', ''),
             'q': self.request.GET.get('q', ''),
@@ -81,10 +82,14 @@ class PostDetailView(DetailView):
     template_name = 'posts/post_detail.html'
     context_object_name = 'post'
 
+    def get_object(self):
+        '''get post by slug.'''
+        return get_object_or_404(Post, slug=self.kwargs.get('slug'))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
+        context['content_type'] = ContentType.objects.get_for_model(Post)
+        
         #get commnets for this post
         from interactions.models import Comment
         context['comments'] = Comment.objects.filter(
@@ -95,8 +100,6 @@ class PostDetailView(DetailView):
         #check user interactions
         if self.request.user.is_authenticated:
             from interactions.models import Like, Vote, Bookmark
-            from django.contrib.contenttypes.models import ContentType
-
             content_type = ContentType.objects.get_for_model(Post)
 
             context['user_liked'] = Like.objects.filter(
@@ -155,7 +158,7 @@ class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     
     def form_valid(self, form):
         messages.success(self.request, "Your post has been updated successfully!")
-        return super().from_valid(form)
+        return super().form_valid(form)
     
     def get_success_url(self):
         return reverse_lazy('posts:post_detail', kwargs={

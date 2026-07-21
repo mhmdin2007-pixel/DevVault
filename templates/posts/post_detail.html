@@ -1,13 +1,281 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ post.title }} | DevVault{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-body">
-        <h2>{{ post.title }}</h2>
-        <p class="text-muted"> {{ post.author.username }} |  {{ post.created_at|date }}</p>
-        <hr>
-        <p>{{ post.content|linebreaks }}</p>
-        <a href="{% url 'posts:home' %}" class="btn btn-secondary">← بازگشت</a>
+<div class="row">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+        <!-- Post Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <!-- Post Type Badge -->
+                <span class="badge bg-primary mb-2">{{ post.get_post_type_display }}</span>
+                
+                <!-- Title -->
+                <h2 class="card-title">{{ post.title }}</h2>
+                
+                <!-- Author & Meta -->
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <a href="{% url 'accounts:profile' post.author.username %}" class="text-decoration-none">
+                        <i class="fas fa-user-circle"></i> {{ post.author.username }}
+                    </a>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar-alt"></i> {{ post.created_at|date:"M d, Y" }}
+                    </small>
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i> {{ post.created_at|timesince }} ago
+                    </small>
+                </div>
+                
+                <!-- Post Content -->
+                <div class="post-content mb-4">
+                    {{ post.content|linebreaks }}
+                </div>
+                
+                <!-- Post Image -->
+                {% if post.image %}
+                    <img src="{{ post.image.url }}" class="img-fluid rounded mb-3" alt="{{ post.title }}">
+                {% endif %}
+                
+                <!-- Post Video -->
+                {% if post.video %}
+                    <video class="img-fluid rounded mb-3" controls>
+                        <source src="{{ post.video.url }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                {% endif %}
+                
+                <!-- Tags -->
+                {% if post.tags.all %}
+                    <div class="mb-3">
+                        {% for tag in post.tags.all %}
+                            <a href="{% url 'posts:home' %}?tag={{ tag.slug }}" class="badge bg-secondary text-decoration-none">
+                                #{{ tag.name }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Company & Category (for interview posts) -->
+                {% if post.is_interview %}
+                    <div class="mb-3">
+                        {% if post.company %}
+                            <span class="badge bg-info">
+                                <i class="fas fa-building"></i> {{ post.company.name }}
+                            </span>
+                        {% endif %}
+                        {% if post.category %}
+                            <span class="badge bg-secondary">{{ post.get_category_display }}</span>
+                        {% endif %}
+                        {% if post.difficulty %}
+                            <span class="badge bg-warning">{{ post.get_difficulty_display }}</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                
+                <!-- Interaction Buttons -->
+                <div class="d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
+                    <!-- Like Button -->
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'interactions:like_toggle' content_type.id post.id %}" 
+                           class="btn {% if user_liked %}btn-danger{% else %}btn-outline-danger{% endif %} btn-sm like-btn">
+                            <i class="fas fa-heart"></i> 
+                            <span id="like-count">{{ post.likes_count }}</span>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'accounts:login' %}" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-heart"></i> {{ post.likes_count }}
+                        </a>
+                    {% endif %}
+                    
+                    <!-- Vote Buttons -->
+                    {% if user.is_authenticated and post.is_interview %}
+                        <form method="post" action="{% url 'interactions:vote_toggle' content_type.id post.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" name="vote_type" value="1" 
+                                    class="btn {% if user_vote and user_vote.vote_type == 1 %}btn-success{% else %}btn-outline-success{% endif %} btn-sm">
+                                <i class="fas fa-thumbs-up"></i> 
+                                <span id="vote-count">{{ post.votes_count }}</span>
+                            </button>
+                            <button type="submit" name="vote_type" value="-1" 
+                                    class="btn {% if user_vote and user_vote.vote_type == -1 %}btn-danger{% else %}btn-outline-danger{% endif %} btn-sm">
+                                <i class="fas fa-thumbs-down"></i>
+                            </button>
+                        </form>
+                    {% else %}
+                        <span class="btn btn-outline-secondary btn-sm disabled">
+                            <i class="fas fa-thumbs-up"></i> {{ post.votes_count }}
+                        </span>
+                    {% endif %}
+                    
+                    <!-- Bookmark Button -->
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'interactions:bookmark_toggle' content_type.id post.id %}" 
+                           class="btn {% if user_bookmarked %}btn-warning{% else %}btn-outline-warning{% endif %} btn-sm">
+                            <i class="fas fa-bookmark"></i>
+                        </a>
+                    {% endif %}
+                    
+                    <!-- Answer Button (for interview posts) -->
+                    {% if post.is_interview and user.is_authenticated %}
+                        <a href="{% url 'interactions:answer_create' post.slug %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-reply"></i> Answer
+                        </a>
+                    {% endif %}
+                    
+                    <!-- Edit/Delete (for author) -->
+                    {% if user == post.author %}
+                        <a href="{% url 'posts:post_update' post.slug %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'posts:post_delete' post.slug %}" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Answers Section (for interview posts) -->
+        {% if post.is_interview %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments"></i> Answers ({{ post.answers.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for answer in post.answers.all %}
+                        <div class="answer border-bottom pb-3 mb-3 {% if answer.is_accepted %}border-success bg-success bg-opacity-10 p-2 rounded{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>
+                                        <a href="{% url 'accounts:profile' answer.author.username %}" class="text-decoration-none">
+                                            {{ answer.author.username }}
+                                        </a>
+                                    </strong>
+                                    <small class="text-muted">{{ answer.created_at|date:"M d, Y" }}</small>
+                                    {% if answer.is_accepted %}
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> Accepted</span>
+                                    {% endif %}
+                                </div>
+                                {% if user == post.author and not answer.is_accepted %}
+                                    <form method="post" action="{% url 'interactions:accept_answer' answer.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-check"></i> Accept
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                            <div class="mt-2">
+                                {{ answer.content|linebreaks }}
+                            </div>
+                            {% if answer.solution_file %}
+                                <a href="{{ answer.solution_file.url }}" class="btn btn-outline-primary btn-sm mt-2">
+                                    <i class="fas fa-file-download"></i> Download Solution
+                                </a>
+                            {% endif %}
+                            {% if answer.solution_note %}
+                                <div class="mt-2 text-muted small">
+                                    <i class="fas fa-sticky-note"></i> {{ answer.solution_note }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">No answers yet. Be the first to answer!</p>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- Comments Section -->
+        {% include 'interactions/comment_list.html' with comments=comments content_type=content_type object=post %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Author Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body text-center">
+                <!-- Avatar -->
+                {% if post.author.profile.avatar %}
+                    <img src="{{ post.author.profile.avatar.url }}" class="rounded-circle img-fluid mb-2" 
+                         style="width: 80px; height: 80px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-2"
+                         style="width: 80px; height: 80px; font-size: 2rem; color: white;">
+                        <i class="fas fa-user"></i>
+                    </div>
+                {% endif %}
+                
+                <h6>
+                    <a href="{% url 'accounts:profile' post.author.username %}" class="text-decoration-none">
+                        {{ post.author.username }}
+                    </a>
+                </h6>
+                
+                {% if post.author.profile.bio %}
+                    <p class="text-muted small">{{ post.author.profile.bio|truncatewords:15 }}</p>
+                {% endif %}
+                
+                <!-- Follow Button -->
+                {% if user.is_authenticated and user != post.author %}
+                    <form method="post" action="{% url 'interactions:follow_toggle' post.author.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fas fa-user-plus"></i> 
+                            {% if user in post.author.followers.all %}Unfollow{% else %}Follow{% endif %}
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Stats Card -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h6>📊 Post Stats</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-heart text-danger"></i> {{ post.likes_count }} Likes</li>
+                    <li><i class="fas fa-thumbs-up text-success"></i> {{ post.votes_count }} Votes</li>
+                    <li><i class="fas fa-comment text-info"></i> {{ post.answers_count }} Answers</li>
+                    <li><i class="fas fa-bookmark text-warning"></i> {{ post.bookmarks.count }} Bookmarks</li>
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Like button with AJAX (optional)
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.href;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('like-count').textContent = data.total_likes;
+                if (data.liked) {
+                    this.classList.remove('btn-outline-danger');
+                    this.classList.add('btn-danger');
+                } else {
+                    this.classList.remove('btn-danger');
+                    this.classList.add('btn-outline-danger');
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

@@ -33,7 +33,7 @@ class ProfileView(DetailView):
     
 class ProfileEditView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """Editing user profile."""
-    model = Profile
+    model = Profile #this is changed
     form_class = ProfileForm
     template_name = 'accounts/profile_edit.html'
 

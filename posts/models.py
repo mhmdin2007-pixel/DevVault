@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 
 class Tag(models.Model):
     '''
@@ -183,14 +184,16 @@ class Post(models.Model):
     def __str__(self):
         ''' Return title as string representation.'''
         return self.title
-    
+
     @property
     def votes_count(self):
-        '''
-        Calculate total votes for this post.
-        '''
-        from django.db.models import Sum
-        result = self.votes.aggregate(total=Sum('vote_type'))['total']
+        """Calculate total votes for this post."""
+        from interactions.models import Vote
+        content_type = ContentType.objects.get_for_model(self)
+        result = Vote.objects.filter(
+            content_type=content_type,
+            object_id=self.id
+        ).aggregate(total=models.Sum('vote_type'))['total']
         return result or 0
     
     @property
@@ -198,10 +201,29 @@ class Post(models.Model):
         return self.answers.count()
 
     @property
+    def likes_count(self):
+        from interactions.models import Like
+        content_type = ContentType.objects.get_for_model(self)
+        return Like.objects.filter(
+            content_type=content_type,
+            object_id=self.id
+        ).count()
+
+    @property
+    def comments_count(self):
+        from interactions.models import Comment
+        content_type = ContentType.objects.get_for_model(self)
+        return Comment.objects.filter(
+            content_type=content_type,
+            object_id=self.id,
+        ).count()
+        
+    @property
     def is_answered(self):
         """Check if post has an accepted answer."""
         return self.answers.filter(is_accepted=True).exists()
     
+    @property
     def accepted_answer(self):
         """Return the accepted answer if exists."""
         return self.answers.filter(is_accepted=True).first()
