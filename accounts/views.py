@@ -27,7 +27,17 @@ class ProfileView(DetailView):
         context = super().get_context_data(**kwargs)
         user = self.get_object()
 
-        context['user_posts'] = user.posts.all()[:10]
+        context['user_posts'] = user.posts.all().order_by('-created_at')
+        context['follower_count'] = user.followers.count()
+        context['following_count'] = user.following.count()
+
+        #check if current user is following this user
+        if self.request.user.is_authenticated and self.request.user != user:
+            context['is_following'] = user.followers.filter(
+                follower=self.request.user
+            ).exists()
+        else:
+            context['is_following'] = False
 
         return context
     
@@ -42,6 +52,7 @@ class ProfileEditView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         profile, created = Profile.objects.get_or_create(
             user=self.request.user
         )
+        
         return profile
     
     def test_func(self):
