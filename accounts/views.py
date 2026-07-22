@@ -28,7 +28,7 @@ class ProfileView(DetailView):
         user = self.get_object()
 
         context['user_posts'] = user.posts.all().order_by('-created_at')
-        context['follower_count'] = user.followers.count()
+        context['followers_count'] = user.followers.count()
         context['following_count'] = user.following.count()
 
         #check if current user is following this user
@@ -52,7 +52,7 @@ class ProfileEditView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         profile, created = Profile.objects.get_or_create(
             user=self.request.user
         )
-        
+
         return profile
     
     def test_func(self):
