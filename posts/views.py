@@ -11,8 +11,8 @@ from django.contrib.contenttypes.models import ContentType
 
 class PostListView(ListView):
     '''
-    Display paginated list of posts with filtering and search.
-    Supports: post_type, category, difficulty, company, tag filters.
+    Display posts from followed users first.
+    If not logged in or no followed users, show all posts.
     '''
     model = Post
     template_name = 'posts/home.html'
@@ -22,6 +22,18 @@ class PostListView(ListView):
     def get_queryset(self):
         """Apply filters and search to the post queryset."""
         queryset = super().get_queryset()
+
+        if self.request.user.is_authenticated:
+            followed_user = self.request.user.following.all().values_list('following', flat=True)
+            if followed_user.exists():
+                queryset = Post.objects.filter(
+                    Q(author__in=followed_user) |
+                    Q(author__isnull=False)
+                ).distinct().order_by('-created_at')
+            else:
+                queryset = Post.objects.all().order_by('-created_at')
+        else:
+            queryset = Post.objects.all().order_by('-created_at')
 
         #search functionality
         search_query = self.request.GET.get('q')
@@ -71,6 +83,13 @@ class PostListView(ListView):
             'tag': self.request.GET.get('tag', ''),
             'q': self.request.GET.get('q', ''),
         }
+
+        #adding follow status for display message
+        if self.request.user.is_authenticated:
+            followed_user = self.request.user.following.all().values_list('following', flat=True)
+            context['has_following'] = followed_user.exists()
+        else:
+            context['has_following'] = False
 
         return context
     
