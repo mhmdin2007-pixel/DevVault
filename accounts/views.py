@@ -11,6 +11,8 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from .forms import ProfileForm
 from .models import Profile
+from django.views.generic import ListView
+from django.db.models import Q
 
 class ProfileView(DetailView):
     '''Display user profile with thier posts and stats.'''

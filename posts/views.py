@@ -8,12 +8,14 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import User
+# posts/views.py
 
 class PostListView(ListView):
-    '''
+    """
     Display posts from followed users first.
     If not logged in or no followed users, show all posts.
-    '''
+    """
     model = Post
     template_name = 'posts/home.html'
     context_object_name = 'posts'
@@ -22,27 +24,33 @@ class PostListView(ListView):
     def get_queryset(self):
         """Apply filters and search to the post queryset."""
         queryset = super().get_queryset()
-
-        if self.request.user.is_authenticated:
-            followed_user = self.request.user.following.all().values_list('following', flat=True)
-            if followed_user.exists():
-                queryset = Post.objects.filter(
-                    Q(author__in=followed_user) |
-                    Q(author__isnull=False)
-                ).distinct().order_by('-created_at')
+        search_query = self.request.GET.get('q')
+        
+        #منطق پایه (فالو یا همه پست‌ها)
+        if not search_query:
+            if self.request.user.is_authenticated:
+                followed_users = self.request.user.following.all().values_list('following', flat=True)
+                if followed_users.exists():
+                    queryset = Post.objects.filter(
+                        Q(author__in=followed_users) | Q(author__isnull=False)
+                    ).distinct().order_by('-created_at')
+                else:
+                    queryset = Post.objects.all().order_by('-created_at')
             else:
                 queryset = Post.objects.all().order_by('-created_at')
         else:
+            # اگر جستجو وجود داشته باشه، فالو نادیده گرفته میشه
             queryset = Post.objects.all().order_by('-created_at')
-
-        #search functionality
-        search_query = self.request.GET.get('q')
+        
+        #جستجو (اگه عبارت وجود داشته باشه)
         if search_query:
             queryset = queryset.filter(
                 Q(title__icontains=search_query) |
-                Q(content__icontains=search_query)
-            )
+                Q(content__icontains=search_query) |
+                Q(author__username__icontains=search_query)
+            ).distinct()
         
+        #فیلترها (post_type, category, difficulty, ...)
         post_type = self.request.GET.get('post_type')
         if post_type:
             queryset = queryset.filter(post_type=post_type)
@@ -69,6 +77,22 @@ class PostListView(ListView):
         """Add filter options and current filters to context."""
         context = super().get_context_data(**kwargs)
 
+        search_query = self.request.GET.get('q')
+        
+        # جستجوی کاربران
+        if search_query:
+            context['search_users'] = User.objects.filter(
+                Q(username__icontains=search_query) |
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(email__icontains=search_query)
+            ).distinct()[:10]
+        else:
+            context['search_users'] = None
+        
+        context['search_query'] = search_query
+        
+        #فیلترها
         context['categories'] = Post.Category.choices
         context['difficulties'] = Post.Difficulty.choices
         context['post_types'] = Post.PostType.choices
@@ -84,63 +108,16 @@ class PostListView(ListView):
             'q': self.request.GET.get('q', ''),
         }
 
-        #adding follow status for display message
+        #وضعیت فالو
+        
         if self.request.user.is_authenticated:
-            followed_user = self.request.user.following.all().values_list('following', flat=True)
-            context['has_following'] = followed_user.exists()
+            followed_users = self.request.user.following.all().values_list('following', flat=True)
+            context['has_following'] = followed_users.exists()
         else:
             context['has_following'] = False
 
         return context
     
-class PostDetailView(DetailView):
-    '''
-    display full post detail with commnets and user interactions.
-    '''
-    model = Post
-    template_name = 'posts/post_detail.html'
-    context_object_name = 'post'
-
-    def get_object(self):
-        '''get post by slug.'''
-        return get_object_or_404(Post, slug=self.kwargs.get('slug'))
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['content_type'] = ContentType.objects.get_for_model(Post)
-        
-        #get commnets for this post
-        from interactions.models import Comment
-        context['comments'] = Comment.objects.filter(
-            content_type__model='post',
-            object_id=self.object.id
-        ).order_by('created_at')
-
-        #check user interactions
-        if self.request.user.is_authenticated:
-            from interactions.models import Like, Vote, Bookmark
-            content_type = ContentType.objects.get_for_model(Post)
-
-            context['user_liked'] = Like.objects.filter(
-                user=self.request.user,
-                content_type=content_type,
-                object_id=self.object.id
-            ).exists()
-
-            context['user_vote'] = Vote.objects.filter(
-                user=self.request.user,
-                content_type=content_type,
-                object_id=self.object.id
-            ).first()
-
-            context['user_bookmarked'] = Bookmark.objects.filter(
-                user=self.request.user,
-                content_type=content_type,
-                object_id=self.object.id
-            ).exists()
-
-        return context
-
 class PostCreateView(LoginRequiredMixin, CreateView):
     """
     Create a new post with any type(SOCILA, INTERVIEW, ARTICLE).
@@ -202,3 +179,48 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         messages.success(self.request, "Your post has been deleted successfully!")
         return super().delete(request, *args, **kwargs)
     
+class PostDetailView(DetailView):
+    '''
+    Display full post detail with comments and user interactions.
+    '''
+    model = Post
+    template_name = 'posts/post_detail.html'
+    context_object_name = 'post'
+
+    def get_object(self):
+        '''Get post by slug.'''
+        return get_object_or_404(Post, slug=self.kwargs.get('slug'))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['content_type'] = ContentType.objects.get_for_model(Post)
+
+        from interactions.models import Comment
+        context['comments'] = Comment.objects.filter(
+            content_type__model='post',
+            object_id=self.object.id
+        ).order_by('created_at')
+
+        if self.request.user.is_authenticated:
+            from interactions.models import Like, Vote, Bookmark
+            content_type = ContentType.objects.get_for_model(Post)
+
+            context['user_liked'] = Like.objects.filter(
+                user=self.request.user,
+                content_type=content_type,
+                object_id=self.object.id
+            ).exists()
+
+            context['user_voted'] = Vote.objects.filter(
+                user=self.request.user,
+                content_type=content_type,
+                object_id=self.object.id
+            ).first()
+
+            context['user_bookmarked'] = Bookmark.objects.filter(
+                user=self.request.user,
+                content_type=content_type,
+                object_id=self.object.id
+            ).exists()
+
+        return context
